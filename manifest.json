@@ -1,0 +1,12 @@
+{
+  "manifest_version": 2,
+  "name": "EditPost",
+  "description": "Inline edits for ChallengePost",
+  "version": "0.0.1",
+  "content_scripts": [
+    {
+      "matches": ["http://platform.dev/*", "http://challengepost.com/*"],
+      "js": ["jquery.min.js", "content.js"]
+    }
+  ]
+}
