@@ -1,17 +1,25 @@
+$.ajaxSetup({
+  contentType: "application/json;charset=UTF-8",
+  dataType: "json",
+  headers: {
+    "X-CSRF-Token": $('meta[name="csrf-token"]').attr('content')
+  }
+});
+
 var getElementByXpath = function(path) {
-  return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+  return document.evaluate(
+    path,
+    document,
+    null,
+    XPathResult.FIRST_ORDERED_NODE_TYPE,
+    null
+  ).singleNodeValue;
 }
 
 var stylesToCssString = function(styles) {
-  var cssString = "";
-
-  for (var key in styles) {
-    if (styles.hasOwnProperty(key)) {
-      cssString = cssString + key + ": " + styles[key] + ";";
-    }
-  }
-
-  return cssString;
+  return $.map(styles, function(value, attribute) {
+    return attribute + ": " + value;
+  }).join("; ");
 }
 
 var editButton = getElementByXpath("//a[contains(text(), 'Edit project')]");
@@ -40,10 +48,7 @@ if (editButton != null) {
       $.ajax({
         type: "PATCH",
         url: window.location.pathname,
-        contentType: "application/json;charset=UTF-8",
-        dataType: "json",
         data: JSON.stringify({
-          authenticity_token: $('meta[name="csrf-token"]').attr("content"),
           software: {
             name: this.value
           }
@@ -52,6 +57,7 @@ if (editButton != null) {
         console.log("Changes were successful");
       }).fail(function() {
         console.log("Changes were not successful");
+        $(titleInput).effect("shake");
       }).always(function() {
         console.log("Finished request");
       });
