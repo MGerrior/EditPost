@@ -6,7 +6,11 @@
   "content_scripts": [
     {
       "matches": ["http://platform.dev/*", "http://challengepost.com/*"],
-      "js": ["jquery.min.js", "content.js"]
+      "js": [
+        "lib/jquery.min.js",
+        "lib/jquery-ui.min.js",
+        "content.js"
+      ]
     }
   ]
 }
