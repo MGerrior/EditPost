@@ -1,10 +1,83 @@
 $.ajaxSetup({
-  contentType: "application/json;charset=UTF-8",
   dataType: "json",
   headers: {
+    "X-EditPost": true,
     "X-CSRF-Token": $('meta[name="csrf-token"]').attr('content')
   }
 });
+
+function EditableTextField() {
+  return this;
+}
+
+EditableTextField.prototype.onDoubleClick = function() {
+  this.originalElement.hide();
+  this.editableElement.show();
+  this.editableElement.focus();
+  this.editableElement.select();
+};
+
+EditableTextField.prototype.onKeyDown = function(event) {
+  if (event.which != 13) {
+    return;
+  }
+
+  $.ajax({
+    type: "PATCH",
+    url: window.location.pathname,
+    data: {
+      software: {
+        name: this.editableElement.val()
+      }
+    }
+  })
+  .done($.proxy(this.onSuccessfulUpdate, this))
+  .fail($.proxy(this.onUpdateFailed, this));
+
+  this.showOriginalElement();
+}
+
+EditableTextField.prototype.showOriginalElement = function() {
+  this.editableElement.hide();
+  this.originalElement.text(this.editableElement.val());
+  this.originalElement.show();
+}
+
+EditableTextField.prototype.onSuccessfulUpdate = function() {
+  console.log("Changes were successful");
+}
+
+EditableTextField.prototype.onUpdateFailed = function() {
+  console.log("Changes were not successful");
+  this.originalElement.effect("shake");
+}
+
+EditableTextField.prototype.initialize = function(idSelector) {
+  this.originalElement = $(idSelector);
+  this.originalElementText = this.originalElement.text().trim();
+  this.editableElement = $("<input />", {
+    id: idSelector + "-input",
+    type: "text",
+    value: this.originalElementText,
+    css: {
+      "display": "none",
+      "background": "none",
+      "color": "white",
+      "border": "none",
+      "margin": "0 0 0.2em 0",
+      "line-height": "1.4",
+      "padding": "0",
+      "font-weight": "bold",
+      "height": "auto",
+      "font-size": "2.375em"
+    }
+  });
+
+  this.editableElement.insertBefore(this.originalElement);
+
+  this.originalElement.dblclick($.proxy(this.onDoubleClick, this));
+  this.editableElement.keydown($.proxy(this.onKeyDown, this));
+};
 
 var getElementByXpath = function(path) {
   return document.evaluate(
@@ -24,6 +97,13 @@ var stylesToCssString = function(styles) {
 
 var editButton = getElementByXpath("//a[contains(text(), 'Edit project')]");
 
+if (editButton != null) {
+  var editableTitle = new EditableTextField();
+
+  editableTitle.initialize("#app-title");
+}
+
+/*
 if (editButton != null) {
   var projectTitle = document.getElementById("app-title");
   var titleInput = document.createElement("input");
@@ -74,3 +154,4 @@ if (editButton != null) {
     titleInput.select();
   });
 }
+*/
