@@ -16,27 +16,111 @@ $.ajaxSetup({
   }
 });
 
-var EditableTextField = (function () {
-  function EditableTextField(originalElement) {
+var EditableSoftwarePage = (function () {
+  function EditableSoftwarePage() {
     var _this = this;
 
-    _classCallCheck(this, EditableTextField);
+    _classCallCheck(this, EditableSoftwarePage);
 
-    this.originalElement = originalElement;
-    this.originalElementText = this.originalElement.text().trim();
-    this.editableElement = this.getInputElement();
-
-    this.editableElement.insertBefore(this.originalElement);
-
-    this.originalElement.dblclick(function (event) {
-      _this.onDoubleClick(event);
-    });
-    this.editableElement.keydown(function (event) {
-      _this.onKeyDown(event);
+    $.ajax({
+      url: window.location.href + "/edit",
+      dataType: "html"
+    }).done(function (data) {
+      _this.onEditLoaded(data);
+    }).fail(function (error) {
+      _this.onEditLoadFailed(error);
     });
   }
 
+  _createClass(EditableSoftwarePage, {
+    onEditLoaded: {
+      value: function onEditLoaded(data) {
+        this.initializeSoftware(data);
+        this.initializeEditableFields();
+      }
+    },
+    onEditLoadFailed: {
+      value: function onEditLoadFailed(error) {
+        console.log("Failed to load data from edit page.");
+        console.log(error);
+      }
+    },
+    initializeSoftware: {
+      value: function initializeSoftware(data) {
+        var editPage = $(data);
+
+        this.software = {
+          name: editPage.find("#software_name").val(),
+          tagline: editPage.find("#software_tagline").val(),
+          description: editPage.find("#software_description").val()
+        };
+      }
+    },
+    initializeEditableFields: {
+      value: function initializeEditableFields() {
+        this.editableSoftware = {
+          name: new EditableTitle($("#app-title"), this.getSoftwareName()),
+          tagline: new EditableTagline($("#app-tagline"), this.getSoftwareTagline())
+        };
+
+        var gallery = $("#app-details-left #gallery");
+        var descriptionElement;
+
+        if (gallery.length > 0) {
+          descriptionElement = gallery.next();
+        } else {
+          descriptionElement = $("#app-details-left").children().first();
+        }
+
+        this.editableSoftware.description = new EditableDescription(descriptionElement, this.getSoftwareDescription());
+      }
+    },
+    getSoftwareName: {
+      value: function getSoftwareName() {
+        return this.software.name;
+      }
+    },
+    getSoftwareTagline: {
+      value: function getSoftwareTagline() {
+        return this.software.tagline;
+      }
+    },
+    getSoftwareDescription: {
+      value: function getSoftwareDescription() {
+        return this.software.description;
+      }
+    }
+  });
+
+  return EditableSoftwarePage;
+})();
+
+var EditableTextField = (function () {
+  function EditableTextField(displayElement, currentValue) {
+    _classCallCheck(this, EditableTextField);
+
+    this.displayElement = displayElement;
+    this.currentValue = currentValue;
+
+    this.initialize();
+  }
+
   _createClass(EditableTextField, {
+    initialize: {
+      value: function initialize() {
+        var _this = this;
+
+        this.editableElement = this.getInputElement();
+        this.editableElement.insertBefore(this.displayElement);
+
+        this.displayElement.dblclick(function (event) {
+          _this.onDoubleClick(event);
+        });
+        this.editableElement.keydown(function (event) {
+          _this.onKeyDown(event);
+        });
+      }
+    },
     getInputElement: {
       value: function getInputElement() {
         return $("<input />");
@@ -44,10 +128,8 @@ var EditableTextField = (function () {
     },
     onDoubleClick: {
       value: function onDoubleClick(event) {
-        this.originalElement.hide();
-        this.editableElement.show();
-        this.editableElement.focus();
-        this.editableElement.select();
+        this.displayElement.hide();
+        this.editableElement.show().focus().select();
       }
     },
     onKeyDown: {
@@ -68,7 +150,7 @@ var EditableTextField = (function () {
           }
         }).done($.proxy(this.onSuccessfulUpdate, this)).fail($.proxy(this.onUpdateFailed, this));
 
-        this.showOriginalElement();
+        this.showDisplayElement();
       }
     },
     getDataToSave: {
@@ -76,16 +158,17 @@ var EditableTextField = (function () {
         return {};
       }
     },
-    showOriginalElement: {
-      value: function showOriginalElement() {
+    showDisplayElement: {
+      value: function showDisplayElement() {
         this.editableElement.hide();
-        this.originalElement.text(this.editableElement.val());
-        this.originalElement.show();
+        this.displayElement.text(this.editableElement.val());
+        this.displayElement.show();
       }
     },
     onSuccessfulUpdate: {
       value: function onSuccessfulUpdate() {
         console.log("Changes were successful");
+        this.currentValue = this.editableElement.val();
       }
     },
     onUpdateFailed: {
@@ -93,9 +176,14 @@ var EditableTextField = (function () {
         var _this = this;
 
         console.log("Changes were not successful");
-        this.originalElement.effect("shake", function () {
-          _this.originalElement.text(_this.originalElementText);
+        this.displayElement.effect("shake", function () {
+          _this.revertChanges();
         });
+      }
+    },
+    revertChanges: {
+      value: function revertChanges() {
+        this.displayElement.text(this.currentValue);
       }
     }
   });
@@ -104,10 +192,10 @@ var EditableTextField = (function () {
 })();
 
 var EditableTitle = (function (_EditableTextField) {
-  function EditableTitle(originalElement) {
+  function EditableTitle(displayElement, currentValue) {
     _classCallCheck(this, EditableTitle);
 
-    _get(Object.getPrototypeOf(EditableTitle.prototype), "constructor", this).call(this, originalElement);
+    _get(Object.getPrototypeOf(EditableTitle.prototype), "constructor", this).call(this, displayElement, currentValue);
   }
 
   _inherits(EditableTitle, _EditableTextField);
@@ -117,7 +205,7 @@ var EditableTitle = (function (_EditableTextField) {
       value: function getInputElement() {
         return $("<input />", {
           type: "text",
-          value: this.originalElementText,
+          value: this.currentValue,
           css: {
             display: "none",
             background: "none",
@@ -144,10 +232,10 @@ var EditableTitle = (function (_EditableTextField) {
 })(EditableTextField);
 
 var EditableTagline = (function (_EditableTextField2) {
-  function EditableTagline(originalElement) {
+  function EditableTagline(displayElement, currentValue) {
     _classCallCheck(this, EditableTagline);
 
-    _get(Object.getPrototypeOf(EditableTagline.prototype), "constructor", this).call(this, originalElement);
+    _get(Object.getPrototypeOf(EditableTagline.prototype), "constructor", this).call(this, displayElement, currentValue);
   }
 
   _inherits(EditableTagline, _EditableTextField2);
@@ -157,7 +245,7 @@ var EditableTagline = (function (_EditableTextField2) {
       value: function getInputElement() {
         return $("<input />", {
           type: "text",
-          value: this.originalElementText,
+          value: this.currentValue,
           css: {
             display: "none",
             background: "none",
@@ -185,10 +273,10 @@ var EditableTagline = (function (_EditableTextField2) {
 })(EditableTextField);
 
 var EditableDescription = (function (_EditableTextField3) {
-  function EditableDescription(originalElement) {
+  function EditableDescription(displayElement, currentValue) {
     _classCallCheck(this, EditableDescription);
 
-    _get(Object.getPrototypeOf(EditableDescription.prototype), "constructor", this).call(this, originalElement);
+    _get(Object.getPrototypeOf(EditableDescription.prototype), "constructor", this).call(this, displayElement, currentValue);
   }
 
   _inherits(EditableDescription, _EditableTextField3);
@@ -197,7 +285,7 @@ var EditableDescription = (function (_EditableTextField3) {
     getInputElement: {
       value: function getInputElement() {
         return $("<textarea />", {
-          text: toMarkdown(this.originalElement.html().trim()),
+          text: this.currentValue,
           css: {
             display: "none",
             background: "none",
@@ -212,22 +300,28 @@ var EditableDescription = (function (_EditableTextField3) {
     },
     onDoubleClick: {
       value: function onDoubleClick(event) {
-        this.originalElement.hide();
+        this.displayElement.hide();
         this.editableElement.show();
         this.editableElement.focus();
       }
     },
-    showOriginalElement: {
-      value: function showOriginalElement() {
+    showDisplayElement: {
+      value: function showDisplayElement() {
         this.editableElement.hide();
 
-        this.originalElement.html(markdown.toHTML(this.editableElement.val()));
-        this.originalElement.show();
+        this.displayElement.html(marked(this.editableElement.val()));
+        this.displayElement.show();
+        Prism.highlightAll();
       }
     },
     getDataToSave: {
       value: function getDataToSave() {
         return { description: this.editableElement.val() };
+      }
+    },
+    revertChanges: {
+      value: function revertChanges() {
+        this.displayElement.html(marked(this.currentValue));
       }
     }
   });
@@ -248,15 +342,5 @@ var stylesToCssString = function stylesToCssString(styles) {
 var editButton = getElementByXpath("//a[contains(text(), 'Edit project')]");
 
 if (editButton != null) {
-  var editableTitle = new EditableTitle($("#app-title"));
-  var editableTagline = new EditableTagline($("#app-tagline"));
-  var editableDescription;
-
-  var gallery = $("#app-details-left #gallery");
-
-  if (gallery.length > 0) {
-    editableDescription = new EditableDescription(gallery.next());
-  } else {
-    editableDescription = new EditableDescription($("#app-details-left").children().first());
-  }
+  var app = new EditableSoftwarePage();
 }

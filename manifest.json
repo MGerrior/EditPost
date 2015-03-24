@@ -9,9 +9,8 @@
       "js": [
         "lib/jquery.min.js",
         "lib/jquery-ui.min.js",
-        "lib/he.js",
-        "lib/to-markdown.js",
-        "lib/markdown.min.js",
+        "lib/marked.min.js",
+        "lib/prism.js",
         "content.js"
       ]
     }
